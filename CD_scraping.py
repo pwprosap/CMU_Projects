@@ -1,47 +1,43 @@
+# Imports needed for the methods in this py file.
 from bs4 import BeautifulSoup
 import requests
 import time
-import numpy as np
 
 
+# Main method that does the entire web scraping and then saving of the content to a file
 def main(url, loop=0):
     timeout = 60
-    while True:  # Had some blacklist issues so added in this retry loop to try and help
+    # Had some blacklist issues so added in this retry loop to try and help
+    while True:
         try:
             web_input = requests.get(url, stream=True, timeout=timeout)
-            break  # If it downloads, get out and get on with life
-        except requests.exceptions.RequestException as e:  # If it doesn't download after the timeout period, an exceptions is thrown, and we try again
+            break  # If it downloads, get out and get on with the scraping
+        except requests.exceptions.RequestException as e:  # If it doesn't download after timeout, throw exception and try again
             print(e)
             pass
     soup = BeautifulSoup(web_input.content, 'html.parser')
-    all_tr = soup.find_all('tr')
-    all_cities = list()
     # Collect all cities from the website that we need to scrape
-    for city in all_tr:
-        try:
-            if city['class'][0] == 'rT' or city['class'][0] == 'rS' or city['class'][0] == 'rB':
-                name = city.select('a')
-                name = str(name[0].contents[0]).split(",")
-                all_cities.append(name[0])
-        except KeyError:
-            pass
-    print(len(all_cities))
+    all_cities = allcities(soup)
     data = list()
+    # This is the main loop that goes through the city names and grabs the data from the individual web pages
     for i in range(loop, len(all_cities)): # this needs to be set to range(0, len(all_cities)) to run over all cities
         population = scrapernoscraping(all_cities[i])
         print(str(i) + ": " + str(all_cities[i]))
         time.sleep(1)
         data.append(population)
+        # Save off files every 150 web pages due to some of the connection issues I was having
         if i > 0 and i % 150 == 0:
-            # Added in loop to make sure we start at the zip starting with the correct city
+            # Added in loop variable to make sure we start at the zip starting with the correct city
             if loop != 0:
                 output = list(zip(all_cities[loop:], data))
             else:
                 output = list(zip(all_cities, data))
             file = 'output' + str(i) + '.py'
+            # Write statement that creates/updates the file with collected info
             with open(file, 'w') as f:
                 for j in range(0, len(output)):
                     f.write(str(output[j]) + "\n")
+    # Final file creation step that adds the remaining cities found to a file
     if loop != 0:
         output = list(zip(all_cities[loop:], data))
     else:
@@ -51,10 +47,12 @@ def main(url, loop=0):
             f.write(str(output[k]) + "\n")
 
 
+# Method to be able to rerun main method with specific start parameter
 def rerun(line):
     main('http://www.city-data.com/city/Pennsylvania.html', loop=line)
 
 
+# Helper method to load in data file of city info
 def loadindata(file):
     arr = list()
     with open(file, 'r') as f:
@@ -63,7 +61,25 @@ def loadindata(file):
     return arr
 
 
+# Method to collect all cities from the website that we need to scrape
+def allcities(soup):
+    all_tr = soup.find_all('tr')
+    all_cities = list()
+    # Loop over all cities from the website that we need to scrape
+    for city in all_tr:
+        try:
+            if city['class'][0] == 'rT' or city['class'][0] == 'rS' or city['class'][0] == 'rB':
+                name = city.select('a')
+                name = str(name[0].contents[0]).split(",")
+                all_cities.append(name[0])
+        except KeyError:
+            pass
+    return all_cities
+
+
+# Method that does the individual web page scraping for all the data we were collecting
 def scrapernoscraping(name):
+    # Special handling for cities with spaces in their names
     namearr = name.split(" ")
     url = 'http://www.city-data.com/city/'
     for k in range(0, len(namearr)):
@@ -72,12 +88,15 @@ def scrapernoscraping(name):
         else:
             url = url + namearr[k] + "-"
     url = url + '-Pennsylvania.html'
-    if name == "O'Hara Township":  #special handling for some weirdly named cities
+    # Special handling for some weirdly named cities
+    if name == "O'Hara Township":
         url = "http://www.city-data.com/city/O-Hara-Township-Pennsylvania.html"
     elif name == 'Penn State Erie (Behrend)':
         url = 'http://www.city-data.com/city/Penn-State-Erie-Behrend-Pennsylvania.html'
     elif name == 'Tharptown (Uniontown)':
         url = 'http://www.city-data.com/city/Tharptown-Uniontown-Pennsylvania.html'
+
+    # Initialize all core variables for use with the Beautiful Soup object
     timeout = 60
     web_input = requests.get(url, stream=True, timeout=timeout)
     more_soup = BeautifulSoup(web_input.content, 'html.parser')
@@ -85,23 +104,23 @@ def scrapernoscraping(name):
     all_section_ma = more_soup.find_all('section', {'class': 'median-age'})
     all_section_mhi = more_soup.find_all('section', {'class', 'median-income'})
     all_section_pbs = more_soup.find_all('section', {'class', 'population-by-sex'})
-    all_section_zip = more_soup.find_all('section', {'id': 'zip-codes'})
     all_ol_county = more_soup.find_all('ol', {'class': 'breadcrumb'})
     all_ul_race = more_soup.find_all('ul', {'class': 'list-group'})
-    #I want to try and make a single FOR loop that takes in a list of Beautiful Soup objects to loop over
+
+    # Grab each data point that we are looking for from the website
     tup1 = citypopulation(all_sections_cp)
     tup2 = medianage(all_section_ma)
     tup3, tup6, tup7 = moneystuff(all_section_mhi)
     tup4, tup5 = men_women(all_section_pbs)
     tup8 = racebr(all_ul_race)
     tup9 = zipscrape(all_ol_county)
-    # Tuple structure is (population, median age, median household income, % of men, % of women, per capita income, median house value, racial breakdown, county)
+    # Structure is (population, median age, median household income, % of men, % of women, per capita income, median house value, racial breakdown, county)
     metrics = tup1 + ' | ' + tup2 + ' | ' + tup3 + ' | ' + tup4 + ' | ' + tup5 + ' | ' + tup6 + ' | ' + tup7 + ' | ' + str(tup8) + ' | ' + tup9
-    # tup = tuple((tup1, tup2, tup3, tup4, tup5, tup6, tup7, tup8, tup9))
     return metrics
 
 
-# Helper functions for grabbing certain types of data from City-Data website ////// NOT DONE
+# Helper methods for grabbing certain types of data from City-Data website, the comment after the return statement
+# tells us what each method returns
 def zipscrape(zips):
     for zip in zips:
         try:
@@ -109,19 +128,6 @@ def zipscrape(zips):
             tup9 = zip2[2].contents[0].contents[0]
         except:
             pass
-        #print(zipout)
-        #for i in range(0,len(zipout)):
-         #   try:
-          #      print(len(zipout[i].contents))
-           #     for j in range(0, len(zipout[i].contents)):
-            #        print(zipout[i].contents[j])
-             #       #zipout = zipout[i]
-             #   print(zipout)
-              #  for j in range(0, zipout[i]):
-               #     zipout = zipout[i].contents
-              #      print(zipout)
-            #except:
-             #   pass
     return tup9 #returns city zip codes
 
 
@@ -179,6 +185,6 @@ def medianage(mage):
 
 
 if __name__ == "__main__":
-    #scrapernoscraping("Wyalusing")
+    #scrapernoscraping("Wyalusing")  # Way for me to test individual cities that may have had issues while scraping
     main('http://www.city-data.com/city/Pennsylvania.html')
-    # rerun(1651)
+    # rerun(1651)  # Rerun tag so I could restart my scraping if it lost connection to the website
