@@ -62,18 +62,18 @@ public class NutriProfiler {
 	//Method to set up the recommended nutrients list variable use in displaying recommended nutrients in the table
 	static void createNutriProfile(Person person) {
 		//Reset recommendedNutrientsList each time
-		NutriByte.person.recommendedNutrientsList.clear();
+		person.recommendedNutrientsList.clear();
 		
 		//Initialize energy and nutrient requirements
 		float personsEnergy = person.calculateEnergyRequirement();
 		float[] personsNutrient = person.calculateNutriRequirement();
 		
 		//Populate recommendedNutrientsList with new energy RecommendedNutrient object
-		NutriByte.person.recommendedNutrientsList.add(new RecommendedNutrient(ENERGY_NUTRIENT_CODE, personsEnergy));
+		person.recommendedNutrientsList.add(new RecommendedNutrient(ENERGY_NUTRIENT_CODE, personsEnergy));
 		int i = 0;
 		//For-each loop to add remaining nutrients to the recommendedNutrientsList
 		for(NutriEnum ne : NutriEnum.values()) {
-			NutriByte.person.recommendedNutrientsList.add(new RecommendedNutrient(ne.nutrientCode, personsNutrient[i]));
+			person.recommendedNutrientsList.add(new RecommendedNutrient(ne.nutrientCode, personsNutrient[i]));
 			i++;
 		}
 	}

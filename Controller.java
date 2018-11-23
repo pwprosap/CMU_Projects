@@ -14,6 +14,7 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.stage.FileChooser;
@@ -94,7 +95,7 @@ public class Controller {
 					} else if (pAct.equals("Very active")) {
 						pActF = 1.48f;
 					}
-					
+					//Handle null data for users
 					try{
 						if(NutriByte.view.ageTextField.getText().isEmpty()) {
 							throw new InvalidProfileException("Missing age information");
@@ -103,8 +104,7 @@ public class Controller {
 					} catch(NumberFormatException e) {
 						throw new InvalidProfileException("Incorrect age input. Must be a number");
 					} 
-					
-
+				
 					try {
 						if(NutriByte.view.weightTextField.getText().isEmpty()) {
 							throw new InvalidProfileException("Missing weight information");
@@ -212,7 +212,104 @@ public class Controller {
 			NutriByte.view.physicalActivityComboBox.setValue("Sedentary");
 			}
 	}
+	
+	//Event handler to close data entry screen and take us back to the welcome screen
+	class CloseMenuItemHandler implements EventHandler<ActionEvent> {
 
+		@Override
+		public void handle(ActionEvent event) {
+			//Close things and go back to the welcome window
+			NutriByte.view.root.setCenter(NutriByte.view.setupWelcomeScene());
+			}
+	}
+
+
+	//Saves currently stored data to a file
+	class SaveMenuItemHandler implements EventHandler<ActionEvent> {
+
+		@Override
+		public void handle(ActionEvent event) {
+			//Initialize variables and ensure valid data is entered to be saved
+			float age = 0, weight = 0, height = 0;
+			String gender = NutriByte.view.genderComboBox.getValue();
+			TextField textField = NutriByte.view.ageTextField;
+			textField.setStyle("-fx-text-inner-color: black;");
+			
+			//Handle gender, then age field's potential errors
+			if(gender == null) {
+				throw new InvalidProfileException("Missing gender information");
+			}else if(NutriByte.view.ageTextField.getText().isEmpty()) {
+				throw new InvalidProfileException("Missing age information");
+			}
+				
+			try {
+				age = Float.parseFloat(textField.getText().trim());
+				if(age < 0) {
+					textField.setStyle("-fx-text-inner-color: red;");
+					throw new InvalidProfileException("Age must be a postive number");
+				}
+			}catch(NumberFormatException e) {
+				textField.setStyle("-fx-text-inner-color: red;");
+				throw new InvalidProfileException("Incorrect age input. Must be a number");
+			}
+				
+			//Handle weight field potential errors
+			if(NutriByte.view.weightTextField.getText().isEmpty()) {
+				throw new InvalidProfileException("Missing weight information");
+			}
+				
+			textField = NutriByte.view.weightTextField;
+			textField.setStyle("-fx-text-inner-color: black;");
+			try {
+				weight = Float.parseFloat(textField.getText().trim());
+				if(weight < 0) {
+					textField.setStyle("-fx-text-inner-color: red;");
+					throw new InvalidProfileException("Weight must be a postive number");
+				}
+			}catch(NumberFormatException e) {
+				textField.setStyle("-fx-text-inner-color: red;");
+				throw new InvalidProfileException("Incorrect weight input. Must be a number");
+			}
+				
+			//Handle height errors for the text field
+			if(NutriByte.view.heightTextField.getText().isEmpty()) {
+				throw new InvalidProfileException("Missing height information");
+			}
+			
+			textField = NutriByte.view.heightTextField;
+			textField.setStyle("-fx-text-inner-color: black;");
+			try {
+				height = Float.parseFloat(textField.getText().trim());
+				if(height < 0) {
+					textField.setStyle("-fx-text-inner-color: red;");
+					throw new InvalidProfileException("Height must be a postive number");
+				}
+			}catch(NumberFormatException e) {
+				textField.setStyle("-fx-text-inner-color: red;");
+				throw new InvalidProfileException("Incorrect height input. Must be a number");
+			}
+			
+			//Initialize variables
+			FileChooser fc = new FileChooser();
+			Stage stage = new Stage();
+		    //Set up file chooser box settings
+			fc.setTitle("Select File");
+			fc.setInitialDirectory(new File(NutriByte.NUTRIBYTE_PROFILE_PATH));
+			fc.getExtensionFilters().addAll(
+					new ExtensionFilter("CSV Files", "*.csv"),
+					new ExtensionFilter("XML Files", "*.xml"),
+					new ExtensionFilter("All Files", "*.*"));
+			//Open file dialog box and save file
+			File file = null;
+			if((file = fc.showSaveDialog(stage)) != null) {
+				NutriByte.model.writeProfile(file.getAbsolutePath());
+			} else {
+				NutriByte.view.root.setCenter(NutriByte.view.nutriTrackerPane);
+				throw new InvalidProfileException("Error while saving file. Make sure you entered a valid file name.");
+			}
+			}
+	}
+	
 	//About information event handler, was pre-coded for me
 	class AboutMenuItemHandler implements EventHandler<ActionEvent> {
 		@Override
@@ -237,7 +334,7 @@ public class Controller {
 
 		@Override
 		public void handle(ActionEvent event) {
-			//Clear all values from the Products fields
+			//Clear all values from all fields
 			NutriByte.view.productSearchTextField.clear();
 			NutriByte.view.nutrientSearchTextField.clear();
 			NutriByte.view.ingredientSearchTextField.clear();
@@ -267,7 +364,7 @@ public class Controller {
 			Product selectedProduct = NutriByte.model.searchResultsList.get(NutriByte.view.productsComboBox.getSelectionModel().getSelectedIndex());
 			Product customProduct;
 			if(NutriByte.view.dietHouseholdSizeTextField.getText().isEmpty() && NutriByte.view.dietServingSizeTextField.getText().isEmpty()) {
-				//Neither field populated
+				//Neither override field populated
 				customProduct = selectedProduct;
 				NutriByte.person.dietProductsList.add(customProduct);
 			}else if(NutriByte.view.dietServingSizeTextField.getText().isEmpty() && !(NutriByte.view.dietHouseholdSizeTextField.getText().isEmpty())) {
@@ -309,9 +406,12 @@ public class Controller {
 					dupCount++;	
 				}
 			}
+			
+			//Ensure duplicates don't get added to the list
 			if(dupCount == 2) {
 				NutriByte.person.dietProductsList.remove(customProduct);
 			}
+			//Update everything with new data
 			NutriByte.view.dietProductsTableView.setItems(NutriByte.person.dietProductsList);
 			NutriByte.person.populateDietNutrientMap();
 			NutriByte.view.nutriChart.updateChart();
@@ -346,7 +446,8 @@ public class Controller {
 			Iterator<Entry<String, Product>> it = Model.productsMap.entrySet().iterator();
 			NutriByte.model.searchResultsList.clear();
 			int count = 0;
-				
+			
+			//Loop through productsMap set of values
 			while(it.hasNext()) {
 				Map.Entry<String, Product> product = (Map.Entry<String, Product>)it.next();
 				//handle case where no fields are populated and search button is clicked
@@ -357,6 +458,7 @@ public class Controller {
 					NutriByte.view.productsComboBox.setItems(emptyProductNutrients);
 					count++;
 				}
+				//Nested if-statements to handle which boxes are set and in what combination
 				if(!(productSearchValue.length() < 1)) {
 					if(!(nutrientSearchValue.length() < 1)) {
 						if(!(ingredientSearchValue.length() < 1)) {
@@ -433,6 +535,8 @@ public class Controller {
 					}
 				}
 			} 
+			
+			
 			NutriByte.view.searchResultSizeLabel.setText(count + " product(s) found");
 			NutriByte.view.productsComboBox.setItems(null);
 			if(!NutriByte.model.searchResultsList.isEmpty()) {
@@ -449,9 +553,10 @@ public class Controller {
 					NutriByte.model.searchResultsList.clear();
 				}
 				for(int i = 0; i < NutriByte.model.searchResultsList.size(); i++) {
+					//Populate ArrayList with products that were found
 					names.add(NutriByte.model.searchResultsList.get(i).toString() + " by " + NutriByte.model.searchResultsList.get(i).getManufacturer());
 				}
-				NutriByte.view.productsComboBox.setItems(names);
+				NutriByte.view.productsComboBox.setItems(names); //Binds list of found products to the combo box
 			}
 		}
 	}
@@ -468,6 +573,7 @@ public class Controller {
 				if(index < 0) {
 					return null;
 				}
+				//Update table with data dynamically and handle text setting for other labels and fields
 				NutriByte.view.productIngredientsTextArea.setText("Product Ingredients: " + NutriByte.model.searchResultsList.get(index).getIngredients().substring(0, (NutriByte.model.searchResultsList.get(index).getIngredients().length() - 1)));
 				ObservableList<Product.ProductNutrient> selectedProduct = FXCollections.observableArrayList(NutriByte.model.searchResultsList.get(index).getProductNutrients().values());
 				NutriByte.view.productNutrientsTableView.setItems(selectedProduct);

@@ -79,11 +79,13 @@ public abstract class Person {
 	
 	//Takes the data from the dietProducList and populates the dietNutrientsMap
 	void populateDietNutrientMap() {
+		//Initialize necessary elements for method
 		dietNutrientsMap.clear();
 		RecommendedNutrient energy = new RecommendedNutrient(NutriProfiler.ENERGY_NUTRIENT_CODE, 0);
 		RecommendedNutrient protein = new RecommendedNutrient(NutriProfiler.NutriEnum.PROTEIN.getNutrientCode(), 0);
 		RecommendedNutrient carb = new RecommendedNutrient(NutriProfiler.NutriEnum.CARBOHYDRATE.getNutrientCode(), 0);
 		RecommendedNutrient fiber = new RecommendedNutrient(NutriProfiler.NutriEnum.FIBER.getNutrientCode(), 0);
+		//Loop through products in the dietProductsList to add up nutrients
 		for (Product prod : NutriByte.person.dietProductsList) { 
 			for(Product.ProductNutrient pnut : prod.getProductNutrients().values()) {
 				if (pnut.getNutrientCode().equals(NutriProfiler.ENERGY_NUTRIENT_CODE)) {
@@ -97,6 +99,7 @@ public abstract class Person {
 				}
 			}
 		}
+		//Add summed values to map
 		dietNutrientsMap.put(NutriProfiler.ENERGY_NUTRIENT_CODE, energy);
 		dietNutrientsMap.put(NutriProfiler.NutriEnum.PROTEIN.getNutrientCode(), protein);
 		dietNutrientsMap.put(NutriProfiler.NutriEnum.CARBOHYDRATE.getNutrientCode(), carb);

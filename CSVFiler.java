@@ -1,8 +1,11 @@
 //Phil Prosapio, Andrew ID: pprosapi
 package hw3;
 
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Scanner;
 
 //CSV reader class to handle CSV input
@@ -10,8 +13,42 @@ public class CSVFiler extends DataFiler {
 	
 	@Override
 	public void writeFile(String filename) {
-		// TODO Auto-generated method stub
-		// Saving this till HW3
+		float pActF = 0.0f;
+		float age = Float.parseFloat(NutriByte.view.ageTextField.getText());
+		float weight = Float.parseFloat(NutriByte.view.weightTextField.getText());
+		float height = Float.parseFloat(NutriByte.view.heightTextField.getText());
+		String gender = NutriByte.view.genderComboBox.getValue();
+		String pAct = NutriByte.view.physicalActivityComboBox.getValue();
+		String foods2Watch = NutriByte.view.ingredientsToWatchTextArea.getText().trim();
+		
+		//Translate physical activity combo box input into float 
+		if(pAct.equals("Sedentary")) {
+			pActF = 1.0f;
+		} else if (pAct.equals("Low active")) {
+			pActF = 1.1f;
+		} else if (pAct.equals("Active")) {
+			pActF = 1.25f;
+		} else if (pAct.equals("Very active")) {
+			pActF = 1.48f;
+		}
+		
+		String personsLine = gender + ", " + age + ", " + weight + ", " + height + ", " + pActF + ", " + foods2Watch;
+		File file;
+		String productLine;
+		try {
+			file = new File(filename).getCanonicalFile();
+			try(BufferedWriter out = new BufferedWriter(new FileWriter(file));) {
+				out.write(personsLine + "\n");
+				for(int i = 0; i < NutriByte.person.dietProductsList.size(); i++) {
+					productLine = NutriByte.person.dietProductsList.get(i).getndbNumber() + ", " + Float.toString(NutriByte.person.dietProductsList.get(i).getServingSize()) + ", " + Float.toString(NutriByte.person.dietProductsList.get(i).getHouseholdSize());
+					out.write(productLine + "\n");
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 	}
 
 	@Override
@@ -84,7 +121,6 @@ public class CSVFiler extends DataFiler {
 			}
 			try {
 				pAct = Float.parseFloat(elements[4]);
-				System.out.println(pAct);
 				if(pAct != 1.0f && pAct != 1.1f && pAct != 1.25f && pAct != 1.48f) {
 					throw new InvalidProfileException("Invalid Physical Activity In File: " + elements[4]);
 				}
@@ -132,7 +168,6 @@ public class CSVFiler extends DataFiler {
 	
 	public Product validateProductData(String data) {
 		String[] elements = data.split(",");
-		System.out.println(elements[0]);
 		Product prod;
 		try{
 			prod = Model.productsMap.get(elements[0]);

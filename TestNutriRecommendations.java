@@ -1,4 +1,3 @@
-//Phil Prosapio, Andrew ID: pprosapi
 package hw3;
 
 import static org.junit.Assert.assertEquals;
@@ -40,63 +39,63 @@ public class TestNutriRecommendations {
 	@Test
 	public void test1_energyRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(3152.204, NutriByte.person.recommendedNutrientsList.get(0).getNutrientQuantity(), .001);
+		assertEquals(3152.204, person1.recommendedNutrientsList.get(0).getNutrientQuantity(), .001);
 	}
 	
 	@Test
 	public void test1_energyRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(1935.54, NutriByte.person.recommendedNutrientsList.get(0).getNutrientQuantity(), .01);
+		assertEquals(1935.54, person2.recommendedNutrientsList.get(0).getNutrientQuantity(), .01);
 	}
 	//------------------------------------------------
 	
 	@Test
 	public void test2_proteinRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(52, NutriByte.person.recommendedNutrientsList.get(1).getNutrientQuantity(), .01);
+		assertEquals(52, person1.recommendedNutrientsList.get(1).getNutrientQuantity(), .01);
 	}
 	
 	@Test
 	public void test2_proteinRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(42.6, NutriByte.person.recommendedNutrientsList.get(1).getNutrientQuantity(), .01);
+		assertEquals(42.6, person2.recommendedNutrientsList.get(1).getNutrientQuantity(), .01);
 	}
 	//------------------------------------------------
 	@Test
 	public void test3_carbRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(130, NutriByte.person.recommendedNutrientsList.get(2).getNutrientQuantity(), 0);
+		assertEquals(130, person1.recommendedNutrientsList.get(2).getNutrientQuantity(), 0);
 	}
 	
 	@Test
 	public void test3_carbRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(130, NutriByte.person.recommendedNutrientsList.get(2).getNutrientQuantity(), 0);
+		assertEquals(130, person2.recommendedNutrientsList.get(2).getNutrientQuantity(), 0);
 	}
 	//------------------------------------------------
 	
 	@Test
 	public void test4_fiberRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(38, NutriByte.person.recommendedNutrientsList.get(3).getNutrientQuantity(), 0);
+		assertEquals(38, person1.recommendedNutrientsList.get(3).getNutrientQuantity(), 0);
 	}
 	@Test
 	public void test4_fiberRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(26, NutriByte.person.recommendedNutrientsList.get(3).getNutrientQuantity(), 0);
+		assertEquals(26, person2.recommendedNutrientsList.get(3).getNutrientQuantity(), 0);
 	}
 	//------------------------------------------------
 	
 	@Test
 	public void test5_histidineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(0.910, NutriByte.person.recommendedNutrientsList.get(4).getNutrientQuantity(), .0001);
+		assertEquals(0.910, person1.recommendedNutrientsList.get(4).getNutrientQuantity(), .0001);
 	}
 	
 	@Test
 	public void test5_histidineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(0.840, NutriByte.person.recommendedNutrientsList.get(4).getNutrientQuantity(), .0001);
+		assertEquals(0.840, person2.recommendedNutrientsList.get(4).getNutrientQuantity(), .0001);
 	}
 	
 	//------------------------------------------------
@@ -104,114 +103,114 @@ public class TestNutriRecommendations {
 	@Test
 	public void test6_isoleucineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(1.235, NutriByte.person.recommendedNutrientsList.get(5).getNutrientQuantity(), .0001);
+		assertEquals(1.235, person1.recommendedNutrientsList.get(5).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test6_isoleucineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(1.140, NutriByte.person.recommendedNutrientsList.get(5).getNutrientQuantity(), .0001);
+		assertEquals(1.140, person2.recommendedNutrientsList.get(5).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	@Test
 	public void test7_leucineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(2.730, NutriByte.person.recommendedNutrientsList.get(6).getNutrientQuantity(), .0001);
+		assertEquals(2.730, person1.recommendedNutrientsList.get(6).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test7_leucineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(2.640, NutriByte.person.recommendedNutrientsList.get(6).getNutrientQuantity(), .0001);
+		assertEquals(2.640, person2.recommendedNutrientsList.get(6).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	@Test
 	public void test8_lysineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(2.470, NutriByte.person.recommendedNutrientsList.get(7).getNutrientQuantity(), .0001);
+		assertEquals(2.470, person1.recommendedNutrientsList.get(7).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test8_lysineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(2.400, NutriByte.person.recommendedNutrientsList.get(7).getNutrientQuantity(), .0001);
+		assertEquals(2.400, person2.recommendedNutrientsList.get(7).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	@Test
 	public void test9_methionineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(1.235, NutriByte.person.recommendedNutrientsList.get(8).getNutrientQuantity(), .0001);
+		assertEquals(1.235, person1.recommendedNutrientsList.get(8).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test9_methionineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(1.140, NutriByte.person.recommendedNutrientsList.get(8).getNutrientQuantity(), .0001);
+		assertEquals(1.140, person2.recommendedNutrientsList.get(8).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	@Test
 	public void test10_cysteineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(1.235, NutriByte.person.recommendedNutrientsList.get(9).getNutrientQuantity(), .0001);
+		assertEquals(1.235, person1.recommendedNutrientsList.get(9).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test25_cysteineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(1.140, NutriByte.person.recommendedNutrientsList.get(9).getNutrientQuantity(), .0001);
+		assertEquals(1.140, person2.recommendedNutrientsList.get(9).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	
 	@Test
 	public void test11_phenylalanineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(2.145, NutriByte.person.recommendedNutrientsList.get(10).getNutrientQuantity(), .0001);
+		assertEquals(2.145, person1.recommendedNutrientsList.get(10).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test11_phenylalanineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(2.1, NutriByte.person.recommendedNutrientsList.get(10).getNutrientQuantity(), .0001);
+		assertEquals(2.1, person2.recommendedNutrientsList.get(10).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	
 	@Test
 	public void test12_tyrosineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(2.145, NutriByte.person.recommendedNutrientsList.get(11).getNutrientQuantity(), .0001);
+		assertEquals(2.145, person1.recommendedNutrientsList.get(11).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test12_tyrosineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(2.1, NutriByte.person.recommendedNutrientsList.get(11).getNutrientQuantity(), .0001);
+		assertEquals(2.1, person2.recommendedNutrientsList.get(11).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	@Test
 	public void test13_threonineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(1.3, NutriByte.person.recommendedNutrientsList.get(12).getNutrientQuantity(), .0001);
+		assertEquals(1.3, person1.recommendedNutrientsList.get(12).getNutrientQuantity(), .0001);
 	}
 	@Test
 	public void test13_threonineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(1.26, NutriByte.person.recommendedNutrientsList.get(12).getNutrientQuantity(), .0001);
+		assertEquals(1.26, person2.recommendedNutrientsList.get(12).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	@Test
 	public void test14_tryptophanRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(0.325, NutriByte.person.recommendedNutrientsList.get(13).getNutrientQuantity(), 0.0001);
+		assertEquals(0.325, person1.recommendedNutrientsList.get(13).getNutrientQuantity(), 0.0001);
 	}
 	@Test
 	public void test14_tryptophanRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(0.3, NutriByte.person.recommendedNutrientsList.get(13).getNutrientQuantity(), .0001);
+		assertEquals(0.3, person2.recommendedNutrientsList.get(13).getNutrientQuantity(), .0001);
 	}
 	//------------------------------------------------
 	@Test
 	public void test15_valineRequirement_Male() {
 		NutriProfiler.createNutriProfile(person1);
-		assertEquals(1.560, NutriByte.person.recommendedNutrientsList.get(14).getNutrientQuantity(), .0001);
+		assertEquals(1.560, person1.recommendedNutrientsList.get(14).getNutrientQuantity(), .0001);
 	}
 	
 	@Test
 	public void test15_valineRequirement_Female() {
 		NutriProfiler.createNutriProfile(person2);
-		assertEquals(1.440, NutriByte.person.recommendedNutrientsList.get(14).getNutrientQuantity(), .0001);
+		assertEquals(1.440, person2.recommendedNutrientsList.get(14).getNutrientQuantity(), .0001);
 	}
 	
 	

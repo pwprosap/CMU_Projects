@@ -73,11 +73,15 @@ public class NutriByte extends Application{
 
 	//Majority of binding occurs here
 	void setupBindings() {
+		//Menu button bindings via setOnAction
 		view.newNutriProfileMenuItem.setOnAction(controller.new NewMenuItemHandler());
 		view.openNutriProfileMenuItem.setOnAction(controller.new OpenMenuItemHandler());
+		view.closeNutriProfileMenuItem.setOnAction(controller.new CloseMenuItemHandler());
+		view.saveNutriProfileMenuItem.setOnAction(controller.new SaveMenuItemHandler());
 		view.exitNutriProfileMenuItem.setOnAction(event -> Platform.exit());
 		view.aboutMenuItem.setOnAction(controller.new AboutMenuItemHandler());
 		
+		//CellValueFactory calls
 		view.recommendedNutrientNameColumn.setCellValueFactory(recommendedNutrientNameCallback);
 		view.recommendedNutrientQuantityColumn.setCellValueFactory(recommendedNutrientQuantityCallback);
 		view.recommendedNutrientUomColumn.setCellValueFactory(recommendedNutrientUomCallback);
@@ -86,6 +90,7 @@ public class NutriByte extends Application{
 		view.productNutrientQuantityColumn.setCellValueFactory(productNutrientQuantityCallback);
 		view.productNutrientUomColumn.setCellValueFactory(productNutrientUomCallback);
 
+		//Button binding via setOnAction
 		view.createProfileButton.setOnAction(controller.new RecommendNutrientsButtonHandler());
 		view.clearButton.setOnAction(controller.new ClearButtonHandler());
 		view.searchButton.setOnAction(controller.new SearchButtonHandler());
@@ -102,6 +107,7 @@ public class NutriByte extends Application{
 
 		@Override
 		protected String computeValue() {
+			//Initialize variables and textfield variable
 			float age = 0, weight = 0, height = 0, pActF = 0.0f;
 			String gender = view.genderComboBox.getValue();
 			String pAct = NutriByte.view.physicalActivityComboBox.getValue();
@@ -109,15 +115,14 @@ public class NutriByte extends Application{
 			ObservableList<Product> tempProducts = FXCollections.observableArrayList();
 			ObservableMap<String, RecommendedNutrient> rnMap = FXCollections.observableHashMap();
 			try {
+				//Save off the diet list and maps for later use
 				tempProducts = NutriByte.person.dietProductsList;
 				rnMap = NutriByte.person.dietNutrientsMap;
-			}catch(Exception e){ System.out.println("uh oh");}
+			}catch(Exception e){}
+	
+			boolean fail = false;
 			
 			try {
-				if(gender == null) {
-					return null;
-				}
-				
 				//Translate physical activity combo box input into float 
 				if(pAct.equals("Sedentary")) {
 					pActF = 1.0f;
@@ -128,76 +133,115 @@ public class NutriByte extends Application{
 				} else if (pAct.equals("Very active")) {
 					pActF = 1.48f;
 				}
+			}catch(NullPointerException e){
+				//Hold
+			}
 				
-				textField.setStyle("-fx-text-inner-color: black;");
-				age = Float.parseFloat(textField.getText().trim());
+			//Handle coloring
+			textField.setStyle("-fx-text-inner-color: black;");
+			if(!NutriByte.view.ageTextField.getText().isEmpty()) {
+				try {
+					age = Float.parseFloat(textField.getText().trim());
+				}catch(NumberFormatException e) {
+					textField.setStyle("-fx-text-inner-color: red;");
+					fail = true;
+				}
 				if(age < 0) {
 					textField.setStyle("-fx-text-inner-color: red;");
-					return null;
+					fail = true;
 				}
+			}else {
+				fail = true;
+			}
 
-				textField = view.weightTextField;
-				textField.setStyle("-fx-text-inner-color: black;");
-				weight = Float.parseFloat(textField.getText().trim());
+			textField = view.weightTextField;
+			textField.setStyle("-fx-text-inner-color: black;");
+			if(!NutriByte.view.weightTextField.getText().isEmpty()) {
+				try {
+					weight = Float.parseFloat(textField.getText().trim());
+				}catch(NumberFormatException e) {
+					textField.setStyle("-fx-text-inner-color: red;");
+					fail = true;
+				}
 				
 				if(weight < 0) {
 					textField.setStyle("-fx-text-inner-color: red;");
-					return null;
+					fail = true;
 				}
-
-				textField = view.heightTextField;
-				textField.setStyle("-fx-text-inner-color: black;");
-				height = Float.parseFloat(textField.getText().trim());
+			}else {
+				fail = true;
+			}
+			
+			textField = view.heightTextField;
+			textField.setStyle("-fx-text-inner-color: black;");
+				
+			if(!NutriByte.view.heightTextField.getText().isEmpty()) {
+				try {
+					height = Float.parseFloat(textField.getText().trim());
+				}catch(NumberFormatException e) {
+					textField.setStyle("-fx-text-inner-color: red;");
+					fail = true;
+				}
 				
 				if(height < 0) {
 					textField.setStyle("-fx-text-inner-color: red;");
-					return null;
+					fail = true;
 				}
-				if(!(NutriByte.person == null)) {
-					if(NutriByte.person instanceof Female) {
-						if(gender.toUpperCase().equals("FEMALE")) {
-							NutriByte.person.age = age;
-							NutriByte.person.weight = weight;
-							NutriByte.person.height = height;
-							NutriByte.person.physicalActivityLevel = pActF;
-							NutriByte.person.ingredientsToWatch = NutriByte.person.ingredientsToWatch;
-						}else {
-							NutriByte.person = new Male(age, weight, height, pActF, NutriByte.view.ingredientsToWatchTextArea.getText());
-						} 
-					}else if(NutriByte.person instanceof Male) {
-						if(gender.toUpperCase().equals("MALE")) {
-							NutriByte.person.age = age;
-							NutriByte.person.weight = weight;
-							NutriByte.person.height = height;
-							NutriByte.person.physicalActivityLevel = pActF;
-							NutriByte.person.ingredientsToWatch = NutriByte.person.ingredientsToWatch;
-						}else {
-							NutriByte.person = new Female(age, weight, height, pActF, NutriByte.view.ingredientsToWatchTextArea.getText());
-						}
-					} 
-				}else {
-					if(gender.toUpperCase().equals("MALE")) {
+			}else {
+				fail = true;
+			}
+				
+			//Check gender box
+			if(gender == null) {
+				return null;
+			}
+			
+			if(fail) {
+				return null;
+			}
+			
+			//Either make new person object or update current one
+			if(!(NutriByte.person == null)) {
+				if(NutriByte.person instanceof Female) {
+					if(gender.toUpperCase().equals("FEMALE")) {
+						NutriByte.person.age = age;
+						NutriByte.person.weight = weight;
+						NutriByte.person.height = height;
+						NutriByte.person.physicalActivityLevel = pActF;
+						NutriByte.person.ingredientsToWatch = NutriByte.person.ingredientsToWatch;
+					}else {
 						NutriByte.person = new Male(age, weight, height, pActF, NutriByte.view.ingredientsToWatchTextArea.getText());
+					} 
+				}else if(NutriByte.person instanceof Male) {
+					if(gender.toUpperCase().equals("MALE")) {
+						NutriByte.person.age = age;
+						NutriByte.person.weight = weight;
+						NutriByte.person.height = height;
+						NutriByte.person.physicalActivityLevel = pActF;
+						NutriByte.person.ingredientsToWatch = NutriByte.person.ingredientsToWatch;
 					}else {
 						NutriByte.person = new Female(age, weight, height, pActF, NutriByte.view.ingredientsToWatchTextArea.getText());
 					}
+				} 
+			}else {
+				if(gender.toUpperCase().equals("MALE")) {
+					NutriByte.person = new Male(age, weight, height, pActF, NutriByte.view.ingredientsToWatchTextArea.getText());
+				}else {
+					NutriByte.person = new Female(age, weight, height, pActF, NutriByte.view.ingredientsToWatchTextArea.getText());
 				}
-				try {
-					NutriByte.person.dietNutrientsMap = rnMap;
-					NutriByte.person.dietProductsList = tempProducts;
-				}catch(Exception e) {
-				
-				}
-				
-				//Populate recommendedNutrientsList via the createNutriProfile method and bind that data to the table
-				NutriProfiler.createNutriProfile(NutriByte.person);
-				NutriByte.view.recommendedNutrientsTableView.setItems(NutriByte.person.recommendedNutrientsList);
-				NutriByte.view.nutriChart.updateChart();
-				return null;
-			} catch (NumberFormatException e) {
-				textField.setStyle("-fx-text-inner-color: red;");
-				return null;
-			} 
+			}
+			try {
+				NutriByte.person.dietNutrientsMap = rnMap;
+				NutriByte.person.dietProductsList = tempProducts;
+			}catch(NullPointerException e) {}
+			
+			
+			System.out.println("udpate?");
+			//Populate recommendedNutrientsList via the createNutriProfile method and bind that data to the table
+			NutriProfiler.createNutriProfile(NutriByte.person);
+			NutriByte.view.recommendedNutrientsTableView.setItems(NutriByte.person.recommendedNutrientsList);
+			NutriByte.view.nutriChart.updateChart();
+			return null;
 		}
 	};
 	
