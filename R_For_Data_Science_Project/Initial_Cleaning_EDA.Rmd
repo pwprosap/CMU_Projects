@@ -1,0 +1,301 @@
+---
+title: "Final Project R Notebook"
+author: "Phil Prosapio, Shayan Khan, Jiyuan Zhou, Bonnie Fan"
+output:
+  html_document:
+    df_print: paged
+---
+
+#Introduction to Data Set
+For our final project, our group decided to tackle the Shelter Animal Outcomes Kaggle competition (found here: https://www.kaggle.com/c/shelter-animal-outcomes/data). This data comes from the Austin Animal Center from October 1st, 2013 to March, 2016. To supplement this Kaggle dataset, we went directly to the Austin Animal Center website and downloaded a related dataset that contains intake information about the pets and merged this additional info into our overall dataset (https://data.austintexas.gov/Health-and-Community-Services/Austin-Animal-Center-Intakes/wter-evkm). Fun fact is that one of our group members actually worked at this animal center back in Austin!
+
+This dataset contains information about cats and dogs that were sheltered at the Austin Animal Center. It contains general info about the animals including: type of animal, breed, color, age on outcome, etc.; where the outcome of interest in this competition represents the status of animals as they leave the Animal Center. We needed to merge our intake and outcome datasets and some of the data columns required cleanup or transformation to be of more use to us (e.g. splitting the Sex column into the animal's Sex as well as the status of their sexual organs - neutered/intact/etc.), while others were of no value when it comes to trying to apply our models. All animals receive a unique Animal ID during intake.
+
+**Business Question**: Our goal is to predict the outcome of animals as they leave the animal center. The outcomes can be one of the following: Adoption, Died, Euthanasia, Return to owner, and Transfer.
+
+The train and test data were randomly split for us already.  
+
+It is our belief that producing an accurate and detailed model to help predict outcomes for these shelter animals could help the Austin Animal Center and the animals themselves in the following ways:
+
+* Help the animal center better predict the outcome of a new animal that comes into the shelter. And depending on that predicted outcome, take proactive measures to steer "assist" the animal in receiving a better outcome based on what our model tells us makes for a pet that is more likely to be adopted.
+
+* Help the animal center better predict allocation of resources based on what actions might need to be taken for each pet in order to maximize the number of positive outcomes for the shelter animals.
+
+#Exploratory Data Analysis
+## Project setup
+```{r message=FALSE}
+#Load Libraries
+libraries <- c("tidyverse", "ggplot2", "DataExplorer", "gridExtra",
+               "reshape", "purrr", "lubridate")
+
+for(lb in libraries){
+  # cat(paste(lb))
+  if(!(require(lb, character.only = TRUE))){
+    install.packages(lb)
+  }
+
+  library(lb, character.only = TRUE)
+}
+```
+
+## Helper Functions for Data Cleanup and EDA
+```{r helper functions}
+#Helper function to convert values in the AgeuponOutcome/Intake column from time strings (e.g. 1 year, 2 months, etc.) into time in months
+timeWarp <- function(age) {
+  age_elements <- str_split_fixed(age,"\\s",2)
+  norm_age = as.numeric(age_elements[1])
+  norm_age
+  time_unit = age_elements[2]
+  #Based on unit of time, appropriately scale up age variable
+  if (grepl(time_unit, "(week)s?")) {
+    norm_age = norm_age*7
+  } else if (grepl(time_unit, "(months)s?")) {
+    norm_age = norm_age*30
+  } else if (grepl(time_unit, "(year)s?")) {
+    norm_age = norm_age * 365
+  }
+  return(norm_age / 30)
+}
+```
+
+
+## Exploratory Data Analysis of Data
+Read in the data from the two different data sources we are using: the animal intake dataset and animal outtake dataset. We then apply the timeWarp function on both data sets to make their age columns into usable values.
+```{r}
+#Load in data and start transforming it
+animal_out <- read_csv(gzfile("data/train.csv.gz")) %>% 
+              select(-DateTime, -OutcomeSubtype) %>% 
+              transform(SexuponOutcome = colsplit(SexuponOutcome, split = "\\s+", names = c('S_Organ_Status_Out', 'Sex_drop')))
+
+animal_in <- read_csv("data/Austin_Animal_Center_Intakes.csv") %>% 
+             select(-Name, -Breed, -Color, -`Animal Type`) %>% 
+             transform(`Sex upon Intake` = colsplit(`Sex upon Intake`, split = "\\s+", names = c('S_Organ_Status_In', 'Sex')))
+```
+## Initial Data Visualization
+Check for anything that needs cleaning
+```{r}
+plot_missing(animal_out)
+```
+
+```{r}
+plot_missing(animal_in)
+```
+
+It looks like the missing values are solely from animals that don't have names. We'll encode this later to a binary variable.
+```{r}
+glimpse(animal_out)
+```
+```{r}
+glimpse(animal_in)
+```
+
+##Clean the data
+Clean up and split a variety of columns to produce more usable features that can then be used in our models.
+We'll first need to clean the data variables:
+```{r}
+animal_out$AgeuponOutcome <- vapply(animal_out$AgeuponOutcome, FUN = timeWarp, FUN.VALUE = double(1)) 
+animal_in$AgeuponIntake <- vapply(animal_in$Age.upon.Intake, FUN = timeWarp, FUN.VALUE = double(1)) 
+```
+```{r}
+plot_histogram(animal_in, title = "Plot of Animal Age by Frequency")
+```
+```{r}
+ggplot(animal_out, aes(x=AgeuponOutcome, fill=OutcomeType)) +
+  geom_density(alpha=0.3) +
+  theme(legend.position="bottom") + 
+  ggtitle("Outcome by age")
+```
+
+You can see a definite bump in adoption where puppies and kittens are eligible for adoption (around 1 years old).
+
+Split the SexuponOutcome/Intake columns in order to get access to the pets sex as well as the status of their sexual organs (neutered, intact, etc.)
+```{r}
+animal_out$S_Organ_Status_Out <- animal_out$SexuponOutcome$S_Organ_Status_Out
+animal_out$Sex_drop <- animal_out$SexuponOutcome$Sex_drop
+
+animal_in$S_Organ_Status_In <- animal_in$Sex.upon.Intake$S_Organ_Status_In
+animal_in$Sex <- animal_in$Sex.upon.Intake$Sex
+
+#Convert Name column into factor so we can see if the fact that the pet had a name documented affected it's outcome. 1=Had Name, 0=Name Unknown
+animal_out$Name[!is.na(animal_out$Name)] <- 1
+animal_out$Name[is.na(animal_out$Name)] <- 0
+animal_out$Name <- as.factor(animal_out$Name)
+
+#Final steps of cleaning up my data and then merging it together.
+animal_out <- animal_out %>% #cad standing for Cleaned_Animal_Data
+       select(-SexuponOutcome, -Sex_drop) %>% 
+       na.omit()
+
+animal_in <- animal_in %>% 
+             select(-Sex.upon.Intake, -Age.upon.Intake)
+
+#Inner join to combine data from the intake and outcome data frames and merge each row based on the unique Animal ID.
+a_merged <- inner_join(animal_out, animal_in, by = c("AnimalID" = "Animal.ID"), all.x=TRUE) %>% 
+                   filter(AgeuponIntake <= AgeuponOutcome)
+
+```
+
+```{r Initial view of data}
+glimpse(a_merged)
+```
+
+There are 1380 unique breeds in the dataset. This is far too many.
+```{r}
+length(unique(a_merged$Breed))
+```
+
+## Feature Engineering
+First we need to clean the dataset to move "mix" into its own feature and keep only the first breed mentioned for the breed mixes:
+```{r Breed_Features}
+a_merged <- a_merged %>%
+  mutate(mix = ifelse(grepl("mix", Breed, ignore.case = T), 1, 0),
+         breed_new = gsub(" Mix", "", Breed),
+         breed_new = strsplit(x = breed_new, split = "/"),
+         breed_new = map_chr(breed_new, function(x){unlist(x[1])}))
+```
+
+Because there are so many separate breeds and colors, it would be difficult to include them in our model. For this reason, we'll categorize them for analysis.
+
+It does look like there are a number of popular breeds that take up more than 75% of the dataset:
+```{r}
+popular <- a_merged %>%
+  count(breed_new, sort = TRUE) %>%
+  mutate(freq = round(100 * n / sum(n),2)) %>%
+  mutate(cumfreq = cumsum(freq)) %>%
+  mutate(is_pop = ifelse(cumfreq < 75, 1, 0))
+
+popular %>%
+  head(20)
+```
+For dogs, the most common breeds are Pit Bulls, Chihuahuas, and Labs.
+```{r}
+dog_popular <- a_merged %>%
+  filter(AnimalType == 'Dog') %>%
+  count(breed_new, sort = TRUE) %>%
+  mutate(freq = round(100 * n / sum(n),2)) %>%
+  head(16)
+
+print(dog_popular)
+```
+80% of Cat breeds appear to be Domestic Shorthair.
+```{r}
+cat_popular <- a_merged %>%
+  filter(AnimalType == 'Cat') %>%
+  count(breed_new, sort = TRUE) %>%
+  mutate(freq = round(100 * n / sum(n),2)) %>%
+  head(16)
+
+print(cat_popular)
+```
+
+```{r}
+popular %>%
+  filter(is_pop == 1) %>%
+  select(breed_new) -> common
+
+a_merged <- a_merged %>%
+  mutate(breed_common = ifelse(breed_new %in% common$breed_new, 1, 0))
+```
+We've now grouped the 1365 sparse class breeds into one "Uncommon" group.
+
+For the ~200 most common breeds, we classified them based on categories outlined by the American Kennel Club. These categories include "Working," "Sporting," "Non-sporting" and "Toy" for dogs, and "Domestic Shorthair" and "Other Cat" for cats. We then mapped each of the breeds to their corresponding category, and saved the mapping in a data frame. Finally, we joined the breed grouping data frame with our existing dataset to add the breed category information.
+```{r}
+breed_groups <- read.csv("breedGroups.csv")
+names(breed_groups) <- c("breed_new", "breed_group")
+#color_groups <- read.csv("colorGroups.csv", row.names = NULL)
+
+a_merged <- inner_join(a_merged, breed_groups, by = "breed_new")
+#a_merged <- left_join(a_merged, color_groups, by = c("Color" = "colors"))
+```
+
+##Save off data frame for use at later points
+```{r}
+write.csv(a_merged, file="Data/Cleaned_Data_Frame.csv")
+```
+
+##Graphical Analysis of Dataset for EDA
+First we leverage the DataExplorer plot_bar function to get an initial feel for how our variables are distributed.
+```{r fig.width=10, fig.height=10}
+a_merged %>%
+    plot_bar(title = "Bar plots of cleaned data")
+```
+
+```{r}
+glimpse(a_merged)
+```
+
+Various ggplots we created to help gain detailed information about a couple of the important variables in our dataset. 
+```{r fig.width=10, fig.height=10}
+g <- ggplot(data=a_merged, aes(x=breed_group, fill= OutcomeType )) 
+g + geom_bar(stat="count", position=position_dodge()) +
+    xlab("Breed Group") +
+    ggtitle("Breed Group by Outcome") +
+    facet_grid(~ OutcomeType) +
+    theme(axis.text.x  = element_text(angle=45),
+          legend.position = "bottom", 
+          plot.title = element_text(hjust = 0.5))
+```
+
+```{r fig.width=8, fig.height=8}
+g <- ggplot(data=a_merged, aes(x=AnimalType, fill= OutcomeType )) 
+g + geom_bar(stat="count", position=position_dodge()) +
+    xlab("Animal Type") +
+    ylim(0, 8000) +
+    ggtitle("Animal Type by Outcome.") +
+    facet_grid(~ OutcomeType) +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r fig.width=8, fig.height=8}
+g <- ggplot(data=a_merged, aes(x=Name, fill= OutcomeType )) 
+g + geom_bar(stat="count", position=position_dodge()) +
+    xlab("Has Name? (1 = Yes, 0 = No)") +
+    ggtitle("Does the Shelter Animal have a Name by Outcome.") +
+    facet_grid(~ OutcomeType) +
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r fig.height=7, fig.width=7}
+g <- ggplot(data=a_merged, aes(x=S_Organ_Status_Out, fill= OutcomeType )) 
+g + geom_bar(stat="count", position=position_dodge()) +
+    theme(axis.text.x  = element_text(angle=45),
+          legend.position = "bottom", 
+          plot.title = element_text(hjust = 0.5)) +
+    xlab("Pet Fixed Status (Spayed or Neutered)") +
+    ggtitle("Pet Fixed Status (Spayed or Neutered) by Outcome") +
+    facet_grid(~ OutcomeType) 
+```
+```{r fig.height=7, fig.width=7}
+g <- ggplot(data=a_merged, aes(x=AgeuponOutcome, fill= OutcomeType )) 
+g + geom_bar(stat="bin", position=position_dodge()) +
+    xlab("Age of animal") +
+    ggtitle("Distribution of Outcome Types by Age at Outcome") +
+    theme(legend.position = "bottom") +
+    facet_grid(~ OutcomeType) + 
+    theme(plot.title = element_text(hjust = 0.5))
+```
+
+#Data Cleaning and EDA Conclusions for our Dataset
+Following our steps to clean, transform, and graph our Animal Shelter dataset, we found a few interesting factors in play within our dataset. 
+
+One of the first, and most positive, insights we get from our last graph (Distribution of Outcome Types by Age at Outcome) is that the majority of shelter animals at the Austin Animal Center do not end up dying or getting euthanized. The majority end up being adopted, transferred, or returned to their owner. This is a comforting thing to know for animal lovers.
+
+Since the ideal outcome for these animals is to end up adopted, we also focused in on factors that led to higher adoption rates for pets. From our data, we identified that these following factors were important determinants for whether a pet was adopted or not:
+
+* Animals who at time of outcome had been fixed (spayed or neutered) had much higher adoption rates than animals who were not. Of the pets adopted, ~11,000 of the ~11,500 that were adopted had been spayed or neutered.
+
+* Looking at our density plot for age upon outcome, we can see a disturbing trend of very high levels of deaths and euthansasia for puppies and kittens within their first 6 months of life (deaths for young animals isn't shocking but the high levels of euthanasia is surprising). The other trend we see from the density plot is the spike in adoptions around the 1 year mark, which is the age at which shelter animals can be adopted.
+
+* Animals who ended up being adopted or returned to owners, thus being able to leave the animal center to a household, for the most part were named. This could very well just be due to data collection or entry errors on the animal centers part, but the time and attention it takes to collect or give an animal a name might be telling to the level of attention and care that pet received from prior owners or the shelter itself.
+
+* The outcome by animal type was not as informative as we'd hoped. For the most part this seems to have to do with the fact that the dataset is heavily skewed towards dogs vs cats. ~2/3s of the data set is dogs, thus outcomes by animal type doesn't tell us as much information as we first expected.
+
+The most important decision that came out of our data cleaning and transformation process has to do with our decision not to include any outcome variables that were provided in the original dataset (other than animal's fixed status and age upon outcome**), due to the fact that we felt this would be unrealistic to include in our modeling portion of the project. This is because the animal shelter would use our model to make predictions during intake, and therefore would have no information concerning the eventual outcomes. Thus, moving forward into our modeling portion of the project, we focus our attention on data that the animal shelter would be able to assess from an animal upon intake to the shelter. 
+
+The reasons we decided to keep the animal's fixed status and age upon outcome has to do with the following:
+
+* Fixed Status: A shelter can leverage its resources to perform procedures on their shelter animals. Furthermore, knowing what fixed statuses lead to better outcomes would help them better decide which animals might benefit from surgical intervention.
+
+* Age Upon Outcome: In a similar vein, shelters can work to advertise certain animals that they realize are approaching certain ages that our models predict lead to worse outcomes. While ideally we would not need to know this info for training our model, we decided to include it since we felt this info was still usable by the shelter.
+
+
