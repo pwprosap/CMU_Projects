@@ -1,0 +1,3 @@
+Database sqlite - 1 File
+CSV Source - 2 Files and 2 Mini Files 
+Web Scrapping - 2 Sources - Scrapped and converted to CSV 
